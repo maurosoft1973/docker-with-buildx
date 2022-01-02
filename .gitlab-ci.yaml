@@ -1,7 +1,7 @@
-image: docker
+image: alpine
 
-services:
-    - name: docker:dind
+#services:
+    #- name: docker:dind
 
 variables:
     DOCKER_CLI_EXPERIMENTAL: enabled
@@ -17,4 +17,6 @@ build-push:
     only:
         - master
     script:
-        - ./build-image.sh
+        - apk add bash
+        - /bin/bash
+        #- ./build-image.sh

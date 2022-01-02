@@ -62,8 +62,8 @@ if [ ${ARGUMENT_ERROR} -ne 0 ]; then
     exit 1
 fi
 
-echo "Docker Image          -> ${DOCKER_IMAGE}"
-echo "Buildx Version        -> ${BUILDX_VERSION}"
+echo "Docker Image   -> ${DOCKER_IMAGE}"
+echo "Buildx Version -> ${BUILDX_VERSION}"
 
 TOKEN=$(curl -s -H "Content-Type: application/json" -X POST -d '{"username": "'${DOCKER_HUB_USER}'", "password": "'${DOCKER_HUB_PASSWORD}'"}' https://hub.docker.com/v2/users/login/ | jq -r .token)
 
@@ -75,19 +75,19 @@ if [ "$TOKEN" != "null" ]; then
     docker rmi -f ${DOCKER_IMAGE}:aarch64 > /dev/null 2>&1
 
     echo "Build and Push Image ${DOCKER_IMAGE}:aarch64"
-    docker buildx build --platform "linux/arm64" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:aarch64 -f ./Dockerfile.aarch64 . --push
+    docker buildx build --platform "linux/arm64" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:aarch64 -t ${DOCKER_IMAGE}:${BUILDX_VERSION}-aarch64 -f ./Dockerfile.aarch64 . --push
 
     echo "Remove image ${DOCKER_IMAGE}:armhf"
     docker rmi -f ${DOCKER_IMAGE}:armhf > /dev/null 2>&1
 
     echo "Build and Push Image ${DOCKER_IMAGE}:armhf"
-    docker buildx build --platform "linux/arm/v6" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:armhf -f ./Dockerfile.armhf . --push
+    docker buildx build --platform "linux/arm/v6" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:armhf -t ${DOCKER_IMAGE}:${BUILDX_VERSION}-armhf -f ./Dockerfile.armhf . --push
 
     echo "Remove image ${DOCKER_IMAGE}:armv7"
     docker rmi -f ${DOCKER_IMAGE}:armv7 > /dev/null 2>&1
 
     echo "Build and Push Image ${DOCKER_IMAGE}:armv7"
-    docker buildx build --platform "linux/arm/v7" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:armv7 -f ./Dockerfile.armv7 . --push
+    docker buildx build --platform "linux/arm/v7" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:armv7 -t ${DOCKER_IMAGE}:${BUILDX_VERSION}-armv7 -f ./Dockerfile.armv7 . --push
 
     #echo "Remove image ${DOCKER_IMAGE}:ppc64le"
     #docker rmi -f ${DOCKER_IMAGE}:ppc64le > /dev/null 2>&1
@@ -99,12 +99,13 @@ if [ "$TOKEN" != "null" ]; then
     docker rmi -f ${DOCKER_IMAGE}:x86_64 > /dev/null 2>&1
 
     echo "Build and Push Image ${DOCKER_IMAGE}:x86_64"
-    docker buildx build --platform "linux/amd64" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:x86_64 -f ./Dockerfile.x86_64 . --push
+    docker buildx build --platform "linux/amd64" --build-arg BUILD_DATE=${BUILD_DATE} --build-arg BUILDX_VERSION="${BUILDX_VERSION}" -t ${DOCKER_IMAGE}:x86_64 -t ${DOCKER_IMAGE}:${BUILDX_VERSION}-x86_64 -f ./Dockerfile.x86_64 . --push
 
     echo "Remove Manifest for ${DOCKER_IMAGE}"
-    docker manifest rm ${DOCKER_IMAGE}
+    docker manifest rm ${DOCKER_IMAGE} > /dev/null 2>&1
+    docker manifest rm ${DOCKER_IMAGE}:${BUILDX_VERSION} > /dev/null 2>&1
 
-    echo "Create and Push Manifest for ${DOCKER_IMAGE}"
+    echo "Create and Push Manifest for ${DOCKER_IMAGE}:latest"
     docker manifest create ${DOCKER_IMAGE} \
         --amend ${DOCKER_IMAGE}:aarch64 \
         --amend ${DOCKER_IMAGE}:armhf \
@@ -112,6 +113,15 @@ if [ "$TOKEN" != "null" ]; then
         --amend ${DOCKER_IMAGE}:x86_64
 
     docker manifest push ${DOCKER_IMAGE}
+
+    echo "Create and Push Manifest for ${DOCKER_IMAGE}:${BUILDX_VERSION}"
+    docker manifest create ${DOCKER_IMAGE}:${BUILDX_VERSION} \
+        --amend ${DOCKER_IMAGE}:${BUILDX_VERSION}-aarch64 \
+        --amend ${DOCKER_IMAGE}:${BUILDX_VERSION}-armhf \
+        --amend ${DOCKER_IMAGE}:${BUILDX_VERSION}-armv7 \
+        --amend ${DOCKER_IMAGE}:${BUILDX_VERSION}-x86_64
+
+    docker manifest push ${DOCKER_IMAGE}:${BUILDX_VERSION}
 else 
     echo "Login to Docker Hub failed, verify account and password"
     exit 1

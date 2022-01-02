@@ -1,0 +1,23 @@
+image: maurosoft1973/docker-with-buildx:latest
+
+services:
+    - name: docker:dind
+
+variables:
+    DOCKER_CLI_EXPERIMENTAL: enabled
+    DOCKERHUB_USER: "$DOCKER_HUB_USER"
+    DOCKERHUB_PASSWORD: "$DOCKER_HUB_PASSWORD"
+
+stages:
+    - build-push
+    - readme
+
+build-push:
+    stage: build-push
+    only:
+        - master
+    script:
+        - apk add bash curl jq
+        - export DOCKER_HUB_USER=$DOCKER_HUB_USER
+        - export DOCKER_HUB_PASSWORD=$DOCKER_HUB_PASSWORD
+        - bash ./build-image.sh
