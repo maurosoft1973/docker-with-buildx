@@ -1,0 +1,29 @@
+FROM alpine AS fetcher
+
+ARG BUILD_DATE
+ARG BUILDX_VERSION=0.7.1
+
+RUN apk add wget
+
+RUN wget "https://github.com/docker/buildx/releases/download/v$BUILDX_VERSION/buildx-v$BUILDX_VERSION.linux-arm64" -O /docker-buildx
+
+RUN chmod a+x /docker-buildx
+
+FROM docker
+
+ARG BUILD_DATE
+ARG BUILDX_VERSION
+
+LABEL \
+    maintainer="Mauro Cardillo <mauro.cardillo@gmail.com>" \
+    build="$BUILD_DATE" \
+    org.opencontainers.image.title="Docker with buildx" \
+    org.opencontainers.image.description="Docker with buildx" \
+    org.opencontainers.image.authors="Mauro Cardillo <mauro.cardillo@gmail.com>" \
+    org.opencontainers.image.vendor="Mauro Cardillo" \
+    org.opencontainers.image.version="v$BUILDX_VERSION" \
+    org.opencontainers.image.url="https://hub.docker.com/r/maurosoft1973/docker-with-buildx/" \
+    org.opencontainers.image.source="https://gitlab.com/maurosoft1973-docker/docker-with-buildx" \
+    org.opencontainers.image.created=$BUILD_DATE
+
+COPY --from=fetcher /docker-buildx /usr/lib/docker/cli-plugins/docker-buildx

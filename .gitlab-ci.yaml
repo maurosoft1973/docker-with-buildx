@@ -1,0 +1,20 @@
+image: docker
+
+services:
+    - name: docker:dind
+
+variables:
+    DOCKER_CLI_EXPERIMENTAL: enabled
+    DOCKER_HUB_USER: "$DOCKER_HUB_USER"
+    DOCKER_HUB_PASSWORD: "$DOCKER_HUB_PASSWORD"
+
+stages:
+    - build-push
+    - readme
+
+build-push:
+    stage: build-push
+    only:
+        - master
+    script:
+        - ./build-image.sh
